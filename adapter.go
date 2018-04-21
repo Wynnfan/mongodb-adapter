@@ -49,11 +49,18 @@ func finalizer(a *adapter) {
 
 // NewAdapter is the constructor for Adapter. If database name is not provided
 // in the Mongo URL, 'casbin' will be used as database name.
-func NewAdapter(url string) persist.Adapter {
+// Can use provided table name.
+func NewAdapter(url string, tableName ...string) persist.Adapter {
 	a := &adapter{url: url}
 
 	// Open the DB, create it if not existed.
-	a.open()
+	if len(tableName) == 0 {
+		a.openByName()
+	} else if len(tableName) == 1 {
+		a.openByName(tableName[0])
+	} else {
+		panic(errors.New("invalid parameter: tableName"))
+	}
 
 	// Call the destructor when the object is released.
 	runtime.SetFinalizer(a, finalizer)
@@ -68,7 +75,8 @@ func NewFilteredAdapter(url string) persist.FilteredAdapter {
 	return NewAdapter(url).(*adapter)
 }
 
-func (a *adapter) open() {
+func (a *adapter) open(tableName ...string) {
+	var collection *mgo.Collection
 	dI, err := mgo.ParseURL(a.url)
 	if err != nil {
 		panic(err)
@@ -91,11 +99,43 @@ func (a *adapter) open() {
 	}
 
 	db := session.DB(dI.Database)
+<<<<<<< HEAD
+	if len(tableName) == 0 {
+		collection = db.C("casbin_rule")
+	} else {
+		collection = db.C(tableName[0])
+=======
 	collection := db.C("casbin_rule")
 
 	a.session = session
 	a.collection = collection
+	indexes := []string{"ptype", "v0", "v1", "v2", "v3", "v4", "v5"}
+	for _, k := range indexes {
+		if err := a.collection.EnsureIndexKey(k); err != nil {
+			panic(err)
+		}
+	}
+}
 
+func (a *adapter) openByName(name string) {
+	dI, err := mgo.ParseURL(a.url)
+	if err != nil {
+		panic(err)
+	}
+	dI.FailFast = true
+
+	if dI.Database == "" {
+		dI.Database = "casbin"
+	}
+
+	session, err := mgo.DialWithInfo(dI)
+	if err != nil {
+		panic(err)
+>>>>>>> 7ef20d5... delete space
+	}
+
+	a.session = session
+	a.collection = collection
 	indexes := []string{"ptype", "v0", "v1", "v2", "v3", "v4", "v5"}
 	for _, k := range indexes {
 		if err := a.collection.EnsureIndexKey(k); err != nil {
@@ -271,22 +311,34 @@ func (a *adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int,
 	selector["ptype"] = ptype
 
 	if fieldIndex <= 0 && 0 < fieldIndex+len(fieldValues) {
-		selector["v0"] = fieldValues[0-fieldIndex]
+		if fieldValues[0-fieldIndex] != "" {
+			selector["v0"] = fieldValues[0-fieldIndex]
+		}
 	}
 	if fieldIndex <= 1 && 1 < fieldIndex+len(fieldValues) {
-		selector["v1"] = fieldValues[1-fieldIndex]
+		if fieldValues[1-fieldIndex] != "" {
+			selector["v1"] = fieldValues[1-fieldIndex]
+		}
 	}
 	if fieldIndex <= 2 && 2 < fieldIndex+len(fieldValues) {
-		selector["v2"] = fieldValues[2-fieldIndex]
+		if fieldValues[2-fieldIndex] != "" {
+			selector["v2"] = fieldValues[2-fieldIndex]
+		}
 	}
 	if fieldIndex <= 3 && 3 < fieldIndex+len(fieldValues) {
-		selector["v3"] = fieldValues[3-fieldIndex]
+		if fieldValues[3-fieldIndex] != "" {
+			selector["v3"] = fieldValues[3-fieldIndex]
+		}
 	}
 	if fieldIndex <= 4 && 4 < fieldIndex+len(fieldValues) {
-		selector["v4"] = fieldValues[4-fieldIndex]
+		if fieldValues[4-fieldIndex] != "" {
+			selector["v4"] = fieldValues[4-fieldIndex]
+		}
 	}
 	if fieldIndex <= 5 && 5 < fieldIndex+len(fieldValues) {
-		selector["v5"] = fieldValues[5-fieldIndex]
+		if fieldValues[5-fieldIndex] != "" {
+			selector["v5"] = fieldValues[5-fieldIndex]
+		}
 	}
 
 	_, err := a.collection.RemoveAll(selector)
