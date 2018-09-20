@@ -55,9 +55,9 @@ func NewAdapter(url string, tableName ...string) persist.Adapter {
 
 	// Open the DB, create it if not existed.
 	if len(tableName) == 0 {
-		a.openByName()
+		a.open()
 	} else if len(tableName) == 1 {
-		a.openByName(tableName[0])
+		a.open(tableName[0])
 	} else {
 		panic(errors.New("invalid parameter: tableName"))
 	}
@@ -99,41 +99,12 @@ func (a *adapter) open(tableName ...string) {
 	}
 
 	db := session.DB(dI.Database)
-<<<<<<< HEAD
+
 	if len(tableName) == 0 {
 		collection = db.C("casbin_rule")
 	} else {
 		collection = db.C(tableName[0])
-=======
-	collection := db.C("casbin_rule")
-
-	a.session = session
-	a.collection = collection
-	indexes := []string{"ptype", "v0", "v1", "v2", "v3", "v4", "v5"}
-	for _, k := range indexes {
-		if err := a.collection.EnsureIndexKey(k); err != nil {
-			panic(err)
-		}
 	}
-}
-
-func (a *adapter) openByName(name string) {
-	dI, err := mgo.ParseURL(a.url)
-	if err != nil {
-		panic(err)
-	}
-	dI.FailFast = true
-
-	if dI.Database == "" {
-		dI.Database = "casbin"
-	}
-
-	session, err := mgo.DialWithInfo(dI)
-	if err != nil {
-		panic(err)
->>>>>>> 7ef20d5... delete space
-	}
-
 	a.session = session
 	a.collection = collection
 	indexes := []string{"ptype", "v0", "v1", "v2", "v3", "v4", "v5"}
